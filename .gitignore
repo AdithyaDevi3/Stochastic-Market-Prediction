@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+build/
+dist/
+eggs/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment variables and secrets
+.env
+.env.local
+secrets.json
+credentials.json
+claude
+claude_api_key
+claude_* 
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# logs
+logs/
+*.log
