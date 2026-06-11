@@ -34,6 +34,7 @@ Notes and caveats
 - The `.env.example` shows how to keep secrets locally; never commit actual keys.
 
 Secrets and safety
+
 - This repository includes a `.gitignore` that excludes `.env`, `claude` files, and other common secret filenames. Do not add real keys to the repo.
 - A lightweight secret scanner is provided at `scripts/secret_scan.py` and a sample Git hook is in `.githooks/pre-commit`.
 
