@@ -52,3 +52,15 @@ Next steps (suggestions):
 - Add caching of fetched data.
 - Add parameter controls for time horizon, confidence intervals, and export.
 - Harden the frontend and provide a small Node static server for CORS-free operation.
+
+New feature: Percentile bands
+
+- The backend now exposes `/simulate_percentiles` which returns percentile time-series (e.g., 5,25,50,75,95) computed across Monte Carlo simulations. The frontend displays the median and shaded 25-75 and 5-95 percentile bands to visualize uncertainty.
+
+Batch simulations
+
+- A new endpoint `/simulate_batch` accepts a JSON body with `symbols` (array of ticker strings) and returns percentile arrays for each symbol. This is useful for comparing several ETFs/indices in a single request.
+
+Ignore and lockfile guidance
+
+- The `.gitignore` has been updated to include common package manager lockfiles and `requirements.txt` patterns. Ensure you never commit `package-lock.json`, `yarn.lock`, `requirements.txt` with secrets embedded. For Python dependency records, prefer `requirements.txt` in local workflows and keep it out of the repo if it contains sensitive pinned URLs.

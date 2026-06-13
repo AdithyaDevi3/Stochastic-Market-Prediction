@@ -32,19 +32,25 @@
         const labels = hist.data.map(d=> d.Date)
         const prices = hist.data.map(d=> d.Close)
 
-        const simRes = await fetch(api('/simulate'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol, sims, steps:252})})
+        const simRes = await fetch(api('/simulate_percentiles'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol, sims, steps:252, percentiles:[5,25,50,75,95]})})
         const sim = await simRes.json()
 
         const datasets = [
           {label: symbol + ' Close', data: prices, borderColor:'black', fill:false, tension:0},
         ]
 
-        // overlay sample simulations if available
-        if(sim.simulations_sample){
-          sim.simulations_sample.forEach((s,i)=>{
-            // s is array of length steps+1
-            datasets.push({label:`sim ${i+1}`, data: s, borderColor:`hsla(${(i*40)%360},80%,50%,0.6)`, fill:false, pointRadius:0, tension:0})
-          })
+        // draw percentile bands: we'll draw lower/upper as filled areas
+        // Chart.js fills between datasets if dataset.fill = '+1' (relative). We'll add datasets in order: 95,75,50,25,5 so fills work.
+        const pct = sim.percentiles || {}
+        if(Object.keys(pct).length){
+          // median
+          datasets.push({label:'median', data: pct['50'], borderColor:'blue', backgroundColor:'rgba(0,0,255,0.05)', fill:false, pointRadius:0, tension:0})
+          // 25-75 band
+          datasets.push({label:'p75', data: pct['75'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:'+1', pointRadius:0, tension:0})
+          datasets.push({label:'p25', data: pct['25'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:false, pointRadius:0, tension:0})
+          // 5-95 outer band
+          datasets.push({label:'p95', data: pct['95'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:'+1', pointRadius:0, tension:0})
+          datasets.push({label:'p5', data: pct['5'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:false, pointRadius:0, tension:0})
         }
 
         if(chart) chart.destroy()
