@@ -64,3 +64,15 @@ Batch simulations
 Ignore and lockfile guidance
 
 - The `.gitignore` has been updated to include common package manager lockfiles and `requirements.txt` patterns. Ensure you never commit `package-lock.json`, `yarn.lock`, `requirements.txt` with secrets embedded. For Python dependency records, prefer `requirements.txt` in local workflows and keep it out of the repo if it contains sensitive pinned URLs.
+
+Audit and untracking
+
+- I scanned the repository for tracked sensitive filenames and updated `.gitignore` to include more patterns (`*.pem`, `*.key`, `.ssh/`, `.aws/`, `secrets.json`, `credentials.json`, etc.). No sensitive files are currently tracked. If you ever find a sensitive file that was committed, remove it from the index but keep it locally:
+
+```bash
+# remove from git but keep local file
+git rm --cached path/to/sensitive.file
+git commit -m "remove sensitive file from repo"
+
+# If it was committed in history and needs to be purged, use 'git filter-repo' or the BFG repo cleaner. Ask me and I can prepare a safe rewrite script.
+```

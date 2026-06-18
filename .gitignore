@@ -46,6 +46,21 @@ requirements-*.txt
 Pipfile.lock
 poetry.lock
 
+# Private keys and certs
+*.pem
+*.key
+*.p12
+
+# SSH and AWS local credentials
+.ssh/
+.aws/
+id_rsa*
+
+# Credential files
+secrets.json
+credentials.json
+*.crt
+
 # logs
 logs/
 *.log
