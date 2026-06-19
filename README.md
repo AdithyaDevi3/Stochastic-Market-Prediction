@@ -65,6 +65,10 @@ Ignore and lockfile guidance
 
 - The `.gitignore` has been updated to include common package manager lockfiles and `requirements.txt` patterns. Ensure you never commit `package-lock.json`, `yarn.lock`, `requirements.txt` with secrets embedded. For Python dependency records, prefer `requirements.txt` in local workflows and keep it out of the repo if it contains sensitive pinned URLs.
 
+Interactive demo
+
+- See `docs/INTERACTIVE.md` for instructions on running the frontend server and using the Play/Pause animation, AR weight slider, and VaR display.
+
 Audit and untracking
 
 - I scanned the repository for tracked sensitive filenames and updated `.gitignore` to include more patterns (`*.pem`, `*.key`, `.ssh/`, `.aws/`, `secrets.json`, `credentials.json`, etc.). No sensitive files are currently tracked. If you ever find a sensitive file that was committed, remove it from the index but keep it locally:

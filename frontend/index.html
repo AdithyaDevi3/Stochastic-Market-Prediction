@@ -16,6 +16,8 @@
       <label>Simulations: <input id="sims" type="number" value="500"/></label>
       <label>AR weight: <input id="arweight" type="range" min="0" max="1" step="0.05" value="0.3" /> <span id="arweightVal">0.3</span></label>
       <button id="load">Load & Simulate</button>
+      <button id="play">Play</button>
+      <label>Speed: <input id="speed" type="range" min="1" max="60" step="1" value="10"/> <span id="speedVal">10</span> fps</label>
     </div>
 
     <div id="var" style="margin-top:8px;font-weight:600"></div>
@@ -70,6 +72,52 @@
       // update AR weight label on slider input
       document.getElementById('arweight').addEventListener('input', (e)=>{
         document.getElementById('arweightVal').textContent = e.target.value
+      })
+
+      // Animation controls
+      let playing = false
+      let frame = 0
+      let animInterval = null
+      function renderFrame(f){
+        // rotate visibility of simulation datasets (those with label sim N or median/p25/p75/p5/p95 use their data up to f)
+        if(!chart) return
+        chart.data.datasets.forEach(ds=>{
+          if(Array.isArray(ds.data)){
+            // show only up to index f
+            ds._originalData = ds._originalData || ds.data.slice()
+            ds.data = ds._originalData.slice(0, Math.max(1, f))
+          }
+        })
+        chart.update('none')
+      }
+
+      function startAnimation(){
+        if(playing) return
+        playing = true
+        const fps = parseInt(document.getElementById('speed').value || '10')
+        const delay = 1000 / Math.max(1,fps)
+        const maxLen = (chart && chart.data && chart.data.datasets && chart.data.datasets[0]) ? chart.data.datasets[0].data.length : 252
+        frame = 1
+        animInterval = setInterval(()=>{
+          frame = (frame >= maxLen) ? 1 : frame + 1
+          renderFrame(frame)
+        }, delay)
+        document.getElementById('play').textContent = 'Pause'
+      }
+
+      function stopAnimation(){
+        playing = false
+        if(animInterval) clearInterval(animInterval)
+        animInterval = null
+        document.getElementById('play').textContent = 'Play'
+      }
+
+      document.getElementById('play').addEventListener('click', ()=>{
+        if(playing) stopAnimation(); else startAnimation();
+      })
+      document.getElementById('speed').addEventListener('input', (e)=>{
+        document.getElementById('speedVal').textContent = e.target.value
+        if(playing){ stopAnimation(); startAnimation(); }
       })
 
       document.getElementById('load').addEventListener('click', load)
