@@ -15,8 +15,10 @@
       <label>Symbol: <input id="symbol" value="^GSPC" /></label>
       <label>Simulations: <input id="sims" type="number" value="500"/></label>
       <label>AR weight: <input id="arweight" type="range" min="0" max="1" step="0.05" value="0.3" /> <span id="arweightVal">0.3</span></label>
-      <button id="load">Load & Simulate</button>
-      <button id="play">Play</button>
+  <button id="load">Load & Simulate</button>
+  <button id="play">Play</button>
+  <button id="exportCsv">Export CSV</button>
+  <button id="exportPng">Export PNG</button>
       <label>Speed: <input id="speed" type="range" min="1" max="60" step="1" value="10"/> <span id="speedVal">10</span> fps</label>
     </div>
 
@@ -118,6 +120,38 @@
       document.getElementById('speed').addEventListener('input', (e)=>{
         document.getElementById('speedVal').textContent = e.target.value
         if(playing){ stopAnimation(); startAnimation(); }
+      })
+
+      // Export CSV of percentiles
+      document.getElementById('exportCsv').addEventListener('click', ()=>{
+        if(!chart) return alert('No data to export')
+        // assume percentile datasets are labeled p5,p25,50,75,95 or median
+        const labels = chart.data.labels || []
+        const rows = []
+        // header
+        const header = ['index','date']
+        chart.data.datasets.forEach(ds=> header.push(ds.label))
+        rows.push(header.join(','))
+        for(let i=0;i<labels.length;i++){
+          const r = [i, labels[i]]
+          chart.data.datasets.forEach(ds=> r.push(ds._originalData ? (ds._originalData[i]===undefined?'':ds._originalData[i]) : (ds.data[i]===undefined?'':ds.data[i])))
+          rows.push(r.join(','))
+        }
+        const csv = rows.join('\n')
+        const blob = new Blob([csv], {type:'text/csv'})
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = `${document.getElementById('symbol').value || 'sim'}-percentiles.csv`;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
+      })
+
+      // Export PNG (chart image)
+      document.getElementById('exportPng').addEventListener('click', ()=>{
+        if(!chart) return alert('No chart to export')
+        const url = chart.toBase64Image()
+        const a = document.createElement('a')
+        a.href = url; a.download = `${document.getElementById('symbol').value || 'sim'}-chart.png`;
+        document.body.appendChild(a); a.click(); a.remove()
       })
 
       document.getElementById('load').addEventListener('click', load)

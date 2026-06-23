@@ -68,6 +68,7 @@ Ignore and lockfile guidance
 Interactive demo
 
 - See `docs/INTERACTIVE.md` for instructions on running the frontend server and using the Play/Pause animation, AR weight slider, and VaR display.
+	- The interactive UI also includes Export CSV and Export PNG buttons so you can download percentile data and chart images for further analysis.
 
 Audit and untracking
 

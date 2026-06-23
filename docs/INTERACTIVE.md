@@ -18,6 +18,9 @@ Controls in the page:
 - Speed: animation frames per second
 - VaR display: shows simple 5% Value-at-Risk for the final step
 
+- Export CSV: downloads a CSV containing the chart labels and all dataset columns (percentiles and median/sample series). Useful for offline analysis.
+- Export PNG: downloads a PNG image of the current chart view.
+
 Notes:
 
 - The frontend animation progressively reveals data points across the time axis. It is intended for exploration and demonstration. For large `sims` you may want to reduce the number of returned sample series to keep the browser responsive.
