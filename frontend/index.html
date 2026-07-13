@@ -11,15 +11,26 @@
   </head>
   <body>
     <h1>Stochastic Market Prediction</h1>
-    <div id="controls">
-      <label>Symbol: <input id="symbol" value="^GSPC" /></label>
-      <label>Simulations: <input id="sims" type="number" value="500"/></label>
-      <label>AR weight: <input id="arweight" type="range" min="0" max="1" step="0.05" value="0.3" /> <span id="arweightVal">0.3</span></label>
-  <button id="load">Load & Simulate</button>
-  <button id="play">Play</button>
-  <button id="exportCsv">Export CSV</button>
-  <button id="exportPng">Export PNG</button>
-      <label>Speed: <input id="speed" type="range" min="1" max="60" step="1" value="10"/> <span id="speedVal">10</span> fps</label>
+    <div id="controls" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center">
+        <label>Symbol:<input id="symbol" value="^GSPC" style="margin-left:6px" /></label>
+        <label>Simulations:<input id="sims" type="number" value="500" style="width:80px;margin-left:6px"/></label>
+        <label>AR weight:<input id="arweight" type="range" min="0" max="1" step="0.05" value="0.3" style="margin-left:6px" /> <span id="arweightVal">0.3</span></label>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="load">Load & Simulate</button>
+        <button id="play">Play</button>
+        <button id="exportCsv">Export CSV</button>
+        <button id="exportPng">Export PNG</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label>Speed:<input id="speed" type="range" min="1" max="60" step="1" value="10" style="margin-left:6px"/> <span id="speedVal">10</span> fps</label>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <label><input type="checkbox" id="show_gbm" checked/> Show GBM</label>
+        <label><input type="checkbox" id="show_ar" checked/> Show AR(1)</label>
+        <label><input type="checkbox" id="show_ensemble" checked/> Show Ensemble</label>
+      </div>
     </div>
 
     <div id="var" style="margin-top:8px;font-weight:600"></div>
@@ -44,21 +55,29 @@
   const sim = await simRes.json()
 
         const datasets = [
-          {label: symbol + ' Close', data: prices, borderColor:'black', fill:false, tension:0},
+          {label: 'Price: ' + symbol, data: prices, borderColor:'black', fill:false, tension:0},
         ]
 
         // draw percentile bands: we'll draw lower/upper as filled areas
         // Chart.js fills between datasets if dataset.fill = '+1' (relative). We'll add datasets in order: 95,75,50,25,5 so fills work.
         const pct = sim.percentiles || {}
         if(Object.keys(pct).length){
-          // median
-          datasets.push({label:'median', data: pct['50'], borderColor:'blue', backgroundColor:'rgba(0,0,255,0.05)', fill:false, pointRadius:0, tension:0})
-          // 25-75 band
-          datasets.push({label:'p75', data: pct['75'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:'+1', pointRadius:0, tension:0})
-          datasets.push({label:'p25', data: pct['25'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:false, pointRadius:0, tension:0})
-          // 5-95 outer band
-          datasets.push({label:'p95', data: pct['95'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:'+1', pointRadius:0, tension:0})
-          datasets.push({label:'p5', data: pct['5'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:false, pointRadius:0, tension:0})
+          // Ensemble median and bands
+          datasets.push({label:'Ensemble median', data: pct['50'], borderColor:'blue', backgroundColor:'rgba(0,0,255,0.05)', fill:false, pointRadius:0, tension:0, meta: 'ensemble'})
+          datasets.push({label:'Ensemble p75', data: pct['75'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:'+1', pointRadius:0, tension:0, meta: 'ensemble'})
+          datasets.push({label:'Ensemble p25', data: pct['25'], borderColor:'rgba(0,128,0,0.0)', backgroundColor:'rgba(0,128,0,0.08)', fill:false, pointRadius:0, tension:0, meta: 'ensemble'})
+          datasets.push({label:'Ensemble p95', data: pct['95'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:'+1', pointRadius:0, tension:0, meta: 'ensemble'})
+          datasets.push({label:'Ensemble p5', data: pct['5'], borderColor:'rgba(255,165,0,0.0)', backgroundColor:'rgba(255,165,0,0.06)', fill:false, pointRadius:0, tension:0, meta: 'ensemble'})
+        }
+
+        // Add GBM and AR component percentiles (hidden by default, toggleable)
+        const gbm = sim.gbm_percentiles || {}
+        if(Object.keys(gbm).length){
+          datasets.push({label:'GBM median', data: gbm['50'], borderColor:'darkblue', pointRadius:0, tension:0, meta: 'gbm', hidden: !document.getElementById('show_gbm').checked})
+        }
+        const arc = sim.ar_percentiles || {}
+        if(Object.keys(arc).length){
+          datasets.push({label:'AR median', data: arc['50'], borderColor:'darkred', pointRadius:0, tension:0, meta: 'ar', hidden: !document.getElementById('show_ar').checked})
         }
 
         // show VaR if provided
@@ -155,6 +174,23 @@
       })
 
       document.getElementById('load').addEventListener('click', load)
+
+      // Toggle datasets by meta field
+      function updateToggles(){
+        if(!chart) return
+        const showGbm = document.getElementById('show_gbm').checked
+        const showAr = document.getElementById('show_ar').checked
+        const showEn = document.getElementById('show_ensemble').checked
+        chart.data.datasets.forEach(ds=>{
+          if(ds.meta === 'gbm') ds.hidden = !showGbm
+          if(ds.meta === 'ar') ds.hidden = !showAr
+          if(ds.meta === 'ensemble') ds.hidden = !showEn
+        })
+        chart.update('none')
+      }
+      document.getElementById('show_gbm').addEventListener('change', updateToggles)
+      document.getElementById('show_ar').addEventListener('change', updateToggles)
+      document.getElementById('show_ensemble').addEventListener('change', updateToggles)
     </script>
   </body>
 </html>

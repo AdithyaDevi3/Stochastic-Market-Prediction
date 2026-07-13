@@ -48,6 +48,7 @@ def health():
 def history(symbol: str, start: str = "2016-01-01", end: str = None):
     try:
         df = fetch_history(symbol, start, end)
+        return {"symbol": symbol, "data": df.reset_index().to_dict(orient="records")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -77,14 +78,23 @@ class EnsembleRequest(SimRequest):
 
 @app.post("/ensemble_simulate")
 def ensemble_simulate(req: EnsembleRequest):
-    """Run GBM and AR1 simulations and return blended percentiles and a simple VaR metric."""
+    """Run GBM and AR1 simulations and return blended percentiles and a simple VaR metric.
+    Response includes:
+      - percentiles: blended ensemble percentiles
+      - gbm_percentiles: percentiles from GBM component
+      - ar_percentiles: percentiles from AR(1) component
+      - var5: 5% VaR (relative) on final-step returns
+      - ar_phi, ar_resid_sigma: AR(1) fit params
+    """
     try:
         import numpy as _np
         df = fetch_history(req.symbol, req.start, req.end)
-        # fit GBM
+
+        # GBM component
         mu, sigma = calibrate_gbm(df['Close'])
         gbm = run_monte_carlo(S0=float(df['Close'].iloc[-1]), mu=mu, sigma=sigma, steps=req.steps, sims=req.sims)
-        # fit AR1
+
+        # AR(1) component
         from model import fit_ar1, simulate_ar1
         logr = _np.log(df['Close']).diff()
         phi, resid_sigma = fit_ar1(logr)
@@ -94,8 +104,10 @@ def ensemble_simulate(req: EnsembleRequest):
         w = float(req.ar_weight)
         blended = (w * ar) + ((1.0 - w) * gbm)
 
-        # percentiles
+        # percentiles for blended and components
         percentiles = {str(p): _np.percentile(blended, p, axis=0).tolist() for p in [5,25,50,75,95]}
+        gbm_percentiles = {str(p): _np.percentile(gbm, p, axis=0).tolist() for p in [5,25,50,75,95]}
+        ar_percentiles = {str(p): _np.percentile(ar, p, axis=0).tolist() for p in [5,25,50,75,95]}
 
         # VaR: simple historical-style VaR at 5% over the final step (loss relative to last price)
         final_prices = blended[:, -1]
@@ -103,10 +115,18 @@ def ensemble_simulate(req: EnsembleRequest):
         returns = (final_prices - last_price) / last_price
         var5 = float(_np.percentile(returns, 5))
 
-        return {"symbol": req.symbol, "last_price": last_price, "percentiles": percentiles, "var5": var5, "ar_phi": phi, "ar_resid_sigma": resid_sigma}
+        return {
+            "symbol": req.symbol,
+            "last_price": last_price,
+            "percentiles": percentiles,
+            "gbm_percentiles": gbm_percentiles,
+            "ar_percentiles": ar_percentiles,
+            "var5": var5,
+            "ar_phi": phi,
+            "ar_resid_sigma": resid_sigma,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return {"symbol": symbol, "data": df.reset_index().to_dict(orient="records")}
 
 
 @app.post("/simulate")
